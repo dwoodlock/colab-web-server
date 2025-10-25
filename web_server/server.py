@@ -27,21 +27,46 @@ PORT = 8000
 
 
 def reset(port: int = PORT):
-    """Terminate any previous ngrok tunnels or port-8000 processes."""
+    """Terminate any previous ngrok tunnels or port processes."""
+    global httpd, server_thread, tunnel
     print("🔄 Resetting environment...")
+
+    # First try graceful shutdown of our own server
     try:
-        for t in ngrok.get_tunnels():
-            try:
-                ngrok.disconnect(t.public_url)
-            except Exception:
-                pass
+        if tunnel:
+            ngrok.disconnect(tunnel.public_url)
+            tunnel = None
+    except Exception:
+        pass
+
+    try:
         ngrok.kill()
     except Exception:
         pass
 
+    if httpd:
+        try:
+            httpd.shutdown()
+            httpd.server_close()
+            httpd = None
+        except Exception:
+            pass
+
+    if server_thread and server_thread.is_alive():
+        server_thread.join(timeout=2)
+
+    # Clean up any external ngrok/port processes
     subprocess.run("pkill -f ngrok || true", shell=True)
-    subprocess.run(f"fuser -k {port}/tcp || true", shell=True)
-    subprocess.run(f"lsof -ti:{port} | xargs -r kill -9 || true", shell=True)
+    # Get our own PID to exclude it
+    our_pid = os.getpid()
+    # Linux uses fuser, macOS uses lsof
+    # Only kill processes that aren't us
+    subprocess.run(
+        f"fuser -k {port}/tcp 2>/dev/null || "
+        f"lsof -ti:{port} | grep -v {our_pid} | "
+        f"xargs kill -9 2>/dev/null || true",
+        shell=True
+    )
     print(f"✅ Reset complete (port {port} cleared).")
 
 

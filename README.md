@@ -2,6 +2,8 @@
 
 A lightweight helper library for teaching and demonstrations in Google Colab.
 
+**Credit:** This entire repository was written by [Claude Code](https://claude.com/claude-code).
+
 ## Installation
 
 In a Colab notebook:

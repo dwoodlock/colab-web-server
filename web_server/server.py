@@ -61,6 +61,8 @@ def start(web_root="./Metric-Treadmill-2017", port: int = PORT, ngrok_token=None
         httpd.serve_forever()
 
     # Ngrok setup
+    if ngrok_token is None:
+        ngrok_token = os.environ.get("NGROK_TOKEN")
     if ngrok_token:
         ngrok.set_auth_token(ngrok_token)
 
